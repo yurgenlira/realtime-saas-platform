@@ -33,6 +33,18 @@ services:
     networks:
       - backend
 
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: python -m apps.server.src.workers.main
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - backend
+
 volumes:
   postgres_data:
 

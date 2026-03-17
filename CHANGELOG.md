@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.3.0]
+
+### Added
+
+- **Multi-Tenant Async Ingestion**: Transitioned from synchronous processing to an event-driven architecture using Redis as a Message Broker.
+- **Tenant Identification (Security)**: Implemented verify_api_key middleware in apps/server/src/core/auth.py to validate X-API-KEY against a tenant catalog before processing.
+- **Asynchronous Hand-off**: Integrated FastAPI BackgroundTasks to decouple ingestion from processing, allowing immediate 202 Accepted responses.
+- **Redis Integration**: Added ingestion.py service to package and push events (lpush) to the events_queue in Redis.
+- **Dedicated Worker Service**: Created a standalone Worker engine (apps/server/src/workers/main.py) using brpop for efficient, non-blocking event consumption.
+- **Monorepo Manifest**: Configured pyproject.toml using setuptools to manage the apps/ namespace and ensure consistent internal imports.
+
+### Infrastructure
+- **Service Decoupling**: Updated docker-compose.yml to include the worker service as an independent scaling unit.
+- **Hardened Docker Image**: Refactored Dockerfile to use uv for deterministic dependency resolution and /opt/venv for immutable runtime environments.
+- **Observability**: Enabled PYTHONUNBUFFERED=1 in containers to ensure real-time log streaming from background workers.
+
+### DevOps
+- **Semantic Security**: Refactored error handling to return 401 Unauthorized for authentication failures, reserving 422 strictly for Pydantic schema validation.
+- **Architectural Evolution**: Established the foundation for horizontal scaling (adding more workers) without modifying the API ingestion logic.
+
 ## [0.2.0]
 
 ### Added

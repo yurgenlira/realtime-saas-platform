@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=82.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realtime-saas-platform"
+version = "0.3.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "redis",
+    "pydantic>=2.0"
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "ruff"
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E203"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps*"]
