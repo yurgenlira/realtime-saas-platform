@@ -5,15 +5,44 @@
 Multi-tenant webhook ingestion platform designed using event-driven architecture and DevOps best practices.
 
 ## Architecture
+```
+Client → FastAPI (Container) → Redis (Cache) → PostgreSQL (Database)
+```
 
-Client → FastAPI
+### Production Equivalent (AWS)
+```
+ALB → ECS Fargate → ElastiCache → RDS
+```
 
 ## Tech Stack
 
-- FastAPI
-- Python 3.12
+- Framework: FastAPI (Python 3.12)
+- Database: PostgreSQL 16
+- Cache/Queue: Redis 7
+- Containerization: Docker (Multi-stage builds)
+- Orchestration: Docker Compose
+- Quality: Pre-commit (Black, Flake8, isort)
 
-## Local Development
+## Quick Start
+
+Start platform
+```bash
+docker compose up --build
+```
+
+Verify services
+```bash
+docker compose ps
+```
+
+## API Documentation
+
+Interactive API documentation available at:
+```
+http://localhost:8000/docs
+```
+
+## Local Development (Optional)
 
 Create virtual environment
 ```bash
@@ -23,13 +52,13 @@ source .venv/bin/activate
 
 Install dependencies
 ```bash
-cd apps/server
-pip install -r requirements.txt
+pip install -r apps/server/requirements.txt pre-commit
+pre-commit install
 ```
 
 Run application
 ```bash
-uvicorn main:app --app-dir src --reload
+uvicorn main:app --app-dir apps/server/src --reload
 ```
 
 ## Repository Structure
@@ -39,7 +68,12 @@ uvicorn main:app --app-dir src --reload
 │   └── server
 │       ├── requirements.txt
 │       └── src
-│           └── main.py
+│           └── main.py       # FastAPI Entrypoint
+├── docker
+│   └── Dockerfile            # Multi-stage & Non-root build
+├── .dockerignore
+├── .pre-commit-config.yaml   # Code Quality Automation
+├── docker-compose.yml        # Infrastructure Orchestration
 ├── CHANGELOG.md
 └── README.md
 ```

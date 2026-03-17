@@ -1,0 +1,17 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+
+# DevOps
+.pre-commit-config.yaml
+.pre-commit-cache/
+
+# OS
+.DS_Store
