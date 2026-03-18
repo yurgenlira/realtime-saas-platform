@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
 
-from apps.server.src.core.auth import verify_api_key
-from apps.server.src.services.ingestion import push_to_queue
+from ..core.auth import verify_api_key
+from ..services.ingestion import push_to_queue
 
 router = APIRouter(prefix="/v1/webhooks")
 
