@@ -1,47 +1,73 @@
-# Stage 1: Builder
-FROM python:3.12-slim AS builder
-
+# ==========================================
+# Stage 1: Base
+# ==========================================
+FROM python:3.12-slim AS base
 WORKDIR /app
 
-# Docker optimizations for uv
-ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+# Enable bytecode compilation, copy mode, and specify venv location
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
 
-# Copy and install dependencies
-RUN pip install --no-cache-dir uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+
+# ==========================================
+# Stage 2: Builder
+# ==========================================
+FROM base AS builder
+
+# Copy manifests first to cache dependency layer
 COPY pyproject.toml uv.lock ./
-RUN mkdir -p apps/server/src
-RUN uv sync --frozen --no-dev --no-install-project
+COPY apps/api/pyproject.toml ./apps/api/
+COPY apps/worker/pyproject.toml ./apps/worker/
+COPY libs/domain/pyproject.toml ./libs/domain/
 
-# Install monorepo as a package
+# Create dummy source files for hatchling to be happy during dependency installation
+RUN mkdir -p apps/api/src/api libs/domain/src/domain apps/worker/src/worker && \
+    touch apps/api/src/api/__init__.py libs/domain/src/domain/__init__.py apps/worker/src/worker/__init__.py
+
+# Install external dependencies, skipping the workspace packages
+RUN uv sync --frozen --no-dev --no-install-project --all-packages
+
+# Copy source code
 COPY . .
-RUN uv sync --frozen --no-dev
+
+# Install workspace members into the environment packages (Non-editable for prod)
+RUN uv sync --frozen --no-dev --no-editable --all-packages
 
 
-# Stage 2: Runner
+# ==========================================
+# Stage 3: Dev
+# ==========================================
+FROM base AS dev
+
+# Uses the builder environment but installs dev dependencies and uses editable mode
+COPY --from=builder /opt/venv /opt/venv
+COPY . .
+RUN uv sync --all-packages
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+
+# ==========================================
+# Stage 4: Runner (prod)
+# ==========================================
 FROM python:3.12-slim AS runner
 WORKDIR /app
 
-# Create non-root user for Hardening
+# Non-root user
 RUN adduser --disabled-password --gecos "" appuser
 
-# Copy the virtual environment already prepared
+# Copy the pre-built virtual environment from the builder
 COPY --from=builder /opt/venv /opt/venv
 
-COPY . .
-
-# SECURITY: The virtual environment belongs to root and is read-only for appuser
-RUN chown -R root:root /opt/venv && \
-    chmod -R 755 /opt/venv
-
-# Activate the venv in the PATH
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/app"
 ENV PYTHONUNBUFFERED=1
 
-
 USER appuser
-
 EXPOSE 8000
-CMD ["uvicorn", "apps.server.src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

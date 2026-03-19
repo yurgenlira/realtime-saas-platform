@@ -4,14 +4,16 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      target: dev
     ports:
       - "8000:8000"
+    volumes:
+      - ./:/app
+    env_file: .env
     depends_on:
-      - db
-      - redis
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/webhooks
-      REDIS_URL: redis://redis:6379
+      db:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - backend
 
@@ -19,9 +21,14 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_DB: webhooks
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -30,6 +37,11 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - backend
 
@@ -37,11 +49,17 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    command: python -m apps.server.src.workers.main
-    environment:
-      - REDIS_HOST=redis
+      target: dev
+    command: python apps/worker/main.py
+    volumes:
+      - ./:/app
+    env_file: .env
+    restart: unless-stopped
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - backend
 

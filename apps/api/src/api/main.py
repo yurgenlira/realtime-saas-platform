@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from api.v1.routes import router as webhooks_v1
+from .v1.routes import router as webhooks_v1
 
 app = FastAPI(title="Realtime SaaS Platform")
 
