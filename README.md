@@ -1,108 +1,66 @@
-# Realtime SaaS Platform
-
-## Project Overview
+# 🚀 Realtime SaaS Platform
 
 Multi-tenant webhook ingestion platform designed using event-driven architecture and DevOps best practices.
 
-## Architecture
-```
+## 🏗️ Architecture
+```text
 Client → FastAPI (Pydantic Validation) → Redis (In-memory Queue) → Worker (Background Tasks) → PostgreSQL
 ```
 
-### Production Equivalent (AWS)
-```
+### ☁️ Production Equivalent (AWS)
+```text
 ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 ```
 
-## Tech Stack
+## 🛠️ Tech Stack
+- **Runtime**: Python 3.12 (uv managed)
+- **Framework**: FastAPI
+- **Database**: PostgreSQL 16
+- **Cache/Queue**: Redis 7
+- **Containerization**: Docker (Multi-stage, Non-root)
+- **Orchestration**: Docker Compose
+- **Quality**: Ruff, Pre-commit
 
-- Framework: FastAPI (Python 3.12)
-- Package Manager: uv
-- Database: PostgreSQL 16
-- Cache/Queue: Redis 7
-- Containerization: Docker (Multi-stage, Non-root, Hardened .venv)
-- Orchestration: Docker Compose
-- Quality: Pre-commit (Black, Flake8, isort)
+## ⚡ Operational Quick Start
 
-## Quick Start
+### 1. Provision Infrastructure
+Ensure you have a `Makefile` compatible environment and `uv` installed. This command will bootstrap the local containers:
 
-Start platform
 ```bash
-docker compose up --build
+make up
 ```
 
-Verify services
+### 2. Database Governance
+Apply versioned migrations and seed initial tenant profiles:
+
 ```bash
-docker compose ps
+make migrate
+make seed
 ```
 
-## API Documentation
+### 3. Verify Ingestion
+Test the platform using a standard tenant API Key:
 
-Interactive API documentation available at:
-```
-http://localhost:8000/docs
-```
-
-## Local Development (optional)
-
-Install uv (Standalone recommended)
 ```bash
-# High-performance, no-python-needed install
-curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
-
-# Ubuntu optional
-sudo snap install astral-uv --classic
+curl -X POST http://localhost:8000/v1/webhooks/ingest \
+  -H "x-api-key: key-client-a" \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "whatsapp", "provider_id": "msg_001", "content": {"text": "ping"}}'
 ```
 
-Initialize environment with `uv`
-```bash
-# Create .venv and install full dev environment
-uv sync
-
-# Install the project in editable mode to resolve namespaces
-pip install -e .
-```
-
-Install quality tools
-```bash
-uv run pre-commit install
-```
-
-Run services (in separate terminals)
-```bash
-# Run API (Development mode with reload)
-uv run uvicorn apps.server.src.main:app --reload
-
-# Run Worker
-uv run python -m apps.server.src.workers.main
-```
-
-## Repository Structure
-```
+## 📁 Project Organization
+```text
 .
-├── apps
-│   └── server
-│       └── src
-│           ├── api
-│           │   └── v1
-│           │       ├── auth.py       # API Key & Tenant Logic
-│           │       ├── routes.py     # Webhook Endpoints
-│           │       └── schemas.py    # Pydantic Models
-│           ├── workers
-│           │   └── main.py           # Background Processor
-│           ├── config.py             # Environment Settings
-│           └── main.py               # FastAPI Entrypoint
-├── docker
-│   └── Dockerfile            # Hardened Multi-stage (uv-based)
-├── pyproject.toml            # Project metadata & dependencies
-├── uv.lock                   # Deterministic lockfile (TOML)
-├── .dockerignore
-├── .pre-commit-config.yaml   # Code Quality Automation
-├── docker-compose.yml        # Infrastructure Orchestration
-├── CHANGELOG.md
-└── README.md
+├── apps/               # Scalable service containers (API, Worker)
+├── libs/               # Shared domain logic & ORM models
+├── infra/              # Database migrations & provider configs
+├── docker/             # Hardened container definitions
+└── Makefile            # Service orchestration interface
 ```
 
-## Changelog
+---
+*Detailed documentation for security policies and CI/CD can be found in the [docs](./docs) directory.*
+
+## 📝 Changelog
 
 See [Changelog](CHANGELOG.md)

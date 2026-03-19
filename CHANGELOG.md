@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.4.0] - 2026-04-09
+
+### Added
+- **Infrastructure-as-Code (Schema)**: Initialized database migration lifecycle using Alembic for declarative schema management.
+- **Relational Domain Model**: Implemented decoupled domain entities (`Tenant`, `Message`) with SQLAlchemy 2.1.
+- **Service Decoupling**: Refactored monolithic structure into a scalable Monorepo (apps/libs/infra).
+- **Control Plane**: Integrated `Makefile` as a standardized interface for local orchestration and lifecycle management.
+
+### Changed
+- **Worker Resiliency**: Optimized model discovery during event processing via centralized metadata registration.
+- **Dependency Management**: Standardized build environment using `uv` for deterministic runtime isolation.
+
+---
+
 ## [0.3.0]
 
 ### Added

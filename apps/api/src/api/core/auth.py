@@ -1,10 +1,15 @@
-from fastapi import Header, HTTPException
+from api.core.database import get_db
+from domain.models.tenant import Tenant
+from fastapi import Depends, Header, HTTPException
+from sqlalchemy.orm import Session
 
-# Simulate catalog
-TENANTS = {"tenant_alpha": "key_123", "tenant_beta": "key_456"}
 
-
-async def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key not in TENANTS.values():
+async def verify_api_key(x_api_key: str = Header(...), db: Session = Depends(get_db)):
+    tenant = (
+        db.query(Tenant)
+        .filter(Tenant.api_key == x_api_key, Tenant.is_active.is_(True))
+        .first()
+    )
+    if not tenant:
         raise HTTPException(status_code=401, detail="Invalid API Key")
-    return [k for k, v in TENANTS.items() if v == x_api_key][0]
+    return str(tenant.id)
