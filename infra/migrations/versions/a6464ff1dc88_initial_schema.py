@@ -6,16 +6,16 @@ Create Date: 2026-04-09 05:05:00.078934
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a6464ff1dc88"
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -37,24 +37,16 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.String(), nullable=False),
         sa.Column("payload", sa.JSON(), nullable=True),
         sa.Column("provider_id", sa.String(), nullable=True),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
-        ),
-        sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True),
         sa.ForeignKeyConstraint(
             ["tenant_id"],
             ["tenants.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_messages_provider_id"), "messages", ["provider_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_messages_tenant_id"), "messages", ["tenant_id"], unique=False
-    )
+    op.create_index(op.f("ix_messages_provider_id"), "messages", ["provider_id"], unique=False)
+    op.create_index(op.f("ix_messages_tenant_id"), "messages", ["tenant_id"], unique=False)
     # ### end Alembic commands ###
 
 

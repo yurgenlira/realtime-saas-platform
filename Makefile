@@ -20,8 +20,12 @@ seed:
 lint:
 	uv run ruff check .
 format:
+	uv run ruff format --check .
+lint-fix:
+	uv run ruff check --fix .
+format-fix:
 	uv run ruff format .
 
 # --- Testing ---
-# test:
-#    uv run pytest
+test:
+	uv run pytest . --cov --cov-report=term-missing --cov-fail-under=70

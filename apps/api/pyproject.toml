@@ -11,9 +11,16 @@ dependencies = [
     "domain",
 ]
 
+[dependency-groups]
+dev = ["pytest>=8.3.0", "pytest-cov>=6.0.0", "ruff>=0.8.0", "httpx>=0.27.0"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
 domain = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov --cov-report=term-missing --cov-fail-under=70"
