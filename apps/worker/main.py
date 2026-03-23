@@ -49,9 +49,7 @@ if __name__ == "__main__":
             _, data = r.brpop("events_queue")
             event = json.loads(data)
 
-            print(
-                f"Event received from Tenant: {event['tenant_id']} Processing: {event['payload']}"
-            )
+            print(f"Event received from Tenant: {event['tenant_id']} Processing: {event['payload']}")
             process_event(event)
 
         except Exception as e:
