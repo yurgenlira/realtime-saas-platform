@@ -20,6 +20,8 @@ ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 - **Containerization**: Docker (Multi-stage, Non-root)
 - **Orchestration**: Docker Compose
 - **Quality**: Ruff, Pre-commit
+- **Testing**: Pytest, pytest-cov (70% minimum coverage gate)
+- **CI**: GitHub Actions (lint → test → docker build)
 
 ## ⚡ Operational Quick Start
 
@@ -48,11 +50,16 @@ curl -X POST http://localhost:8000/v1/webhooks/ingest \
   -d '{"provider": "whatsapp", "provider_id": "msg_001", "content": {"text": "ping"}}'
 ```
 
+### 4. Run Tests
+```bash
+cd apps/api && uv run pytest tests/unit/ -v
+```
+
 ## 📁 Project Organization
 ```text
 .
 ├── apps/               # Scalable service containers (API, Worker)
-├── libs/               # Shared domain logic & ORM models
+├── libs/               # Shared domain logic & ORM models (domain package)
 ├── infra/              # Database migrations & provider configs
 ├── docker/             # Hardened container definitions
 └── Makefile            # Service orchestration interface
