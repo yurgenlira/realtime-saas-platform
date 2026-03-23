@@ -16,7 +16,19 @@ This project follows an evolving architecture from MVP to Enterprise SaaS.
 - **Worker Resiliency**: Optimized model discovery during event processing via centralized metadata registration.
 - **Dependency Management**: Standardized build environment using `uv` for deterministic runtime isolation.
 
----
+
+## [0.5.0]
+
+### Added
+- **Continuous Integration Pipeline**: Implemented three-stage GitHub Actions workflow (`code-quality → test → docker-build`) with cascading job dependencies enforcing fail-fast validation on every Pull Request.
+- **Unit Test Suite**: Implemented 10 unit tests across `test_auth.py` and `test_webhooks.py` covering tenant authentication middleware and webhook ingestion endpoint using `dependency_overrides` and `patch()`.
+- **Coverage Gate**: Configured `pytest-cov` with a 70% minimum threshold enforced at merge time via `--cov-fail-under=70` and `[tool.coverage.run]` source declaration.
+- **Test Environment Bootstrap**: Added `conftest.py` with `os.environ.setdefault` to inject `DATABASE_URL` and `REDIS_URL` before module collection, preventing `create_engine(None)` failure in CI.
+- **Docker Build Validation**: Added dry-run Docker Buildx step targeting the `runner` production stage, catching image compilation errors before any cloud deployment attempt.
+
+### Changed
+- **Dependency Manifest**: Added `httpx`, `pytest-cov`, and `ruff` to `[project.optional-dependencies] dev` in `apps/api/pyproject.toml`.
+
 
 ## [0.3.0]
 
