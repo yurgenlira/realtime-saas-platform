@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.8.0]
+
+### Added
+- **EC2 Compute Layer**: Provisioned `t3.micro` (Amazon Linux 2023) in private VPC subnets with `app_sg` attached, enabling connectivity to RDS on port 5432.
+- **IAM Instance Profile**: Created IAM Role with `CloudWatchAgentServerPolicy` and `AmazonSSMManagedInstanceCore` — enables CloudWatch Logs and SSH-less access via SSM Session Manager without opening port 22.
+- **Docker Bootstrapping via `user_data`**: `templatefile()` renders a bash script that installs Docker, clones the repository (with GitHub PAT for private repo simulation), builds the multi-stage image and launches the API container with RDS credentials injected from Terraform variables.
+- **Alembic Entrypoint (`entrypoint.sh`)**: Shell script as Docker `ENTRYPOINT` that runs `alembic upgrade head` before starting Uvicorn, automating schema migrations on every container startup.
+- **Robust Health Check**: Updated `GET /health` to execute `SELECT 1` against RDS via SQLAlchemy, returning `{"status": "healthy", "database": "connected"}` on success and `503` if the database is unreachable.
+- **Reusable Terraform Module**: `infra/terraform/modules/ec2/` with `main.tf`, `variables.tf`, and `outputs.tf`.
+
+### Changed
+- **`database.py`**: Added `pool_pre_ping=True`, `pool_size=5`, and `max_overflow=10` to the SQLAlchemy engine for resilient connection management in cloud environments.
+- **`docker/Dockerfile`**: Updated `runner` stage to copy `infra/` (Alembic config + migrations) and `entrypoint.sh` as `ENTRYPOINT` with `exec` for correct signal handling.
+- **`docker/entrypoint.sh`**: Invokes `alembic` and `uvicorn` directly from `/opt/venv/bin` — `uv` binary is not present in the `runner` stage.
+
+### Infrastructure
+- **Environment Updated**: `infra/terraform/envs/dev/main.tf` calls the `ec2` module consuming outputs from `networking` and `rds` modules.
+- **New Outputs**: `ec2_instance_id` and `ec2_private_ip` exported from `envs/dev`.
+
 ## [0.7.0]
 
 ### Added
