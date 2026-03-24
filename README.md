@@ -7,7 +7,14 @@ Multi-tenant webhook ingestion platform designed using event-driven architecture
 Client → FastAPI (Pydantic Validation) → Redis (In-memory Queue) → Worker (Background Tasks) → PostgreSQL
 ```
 
-### ☁️ Production Equivalent (AWS)
+### ☁️ Cloud Infrastructure (AWS)
+```text
+VPC (10.0.0.0/16)
+  ├── Public Subnets  [us-east-1a, us-east-1b] → Internet Gateway → ALB (future)
+  └── Private Subnets [us-east-1a, us-east-1b] → NAT Gateway → RDS, EC2
+```
+
+### ☁️ Production Target
 ```text
 ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 ```
@@ -19,6 +26,7 @@ ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 - **Cache/Queue**: Redis 7
 - **Containerization**: Docker (Multi-stage, Non-root)
 - **Orchestration**: Docker Compose
+- **IaC**: Terraform 1.14.7 (AWS provider 6.40.0, remote state: S3 + DynamoDB)
 - **Quality**: Ruff, Pre-commit
 - **Testing**: Pytest, pytest-cov (70% minimum coverage gate)
 - **CI**: GitHub Actions (lint → test → docker build)
@@ -60,7 +68,11 @@ cd apps/api && uv run pytest tests/unit/ -v
 .
 ├── apps/               # Scalable service containers (API, Worker)
 ├── libs/               # Shared domain logic & ORM models (domain package)
-├── infra/              # Database migrations & provider configs
+├── infra/
+│   ├── migrations/     # Alembic schema versioning
+│   └── terraform/      # AWS infrastructure as code
+│       ├── modules/    # Reusable Terraform modules (networking, ...)
+│       └── envs/       # Environment entry points (dev, staging, prod)
 ├── docker/             # Hardened container definitions
 └── Makefile            # Service orchestration interface
 ```
