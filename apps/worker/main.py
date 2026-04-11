@@ -50,8 +50,7 @@ if __name__ == "__main__":
             event = json.loads(data)
 
             print(
-                f"Event received from Tenant: {event['tenant_id']} "
-                f"Processing: {event['payload']}"
+                f"Event received from Tenant: {event['tenant_id']} Processing: {event['payload']}"
             )
             process_event(event)
 
