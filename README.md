@@ -11,7 +11,10 @@ Client → FastAPI (Pydantic Validation) → Redis (In-memory Queue) → Worker 
 ```text
 VPC (10.0.0.0/16)
   ├── Public Subnets  [us-east-1a, us-east-1b] → Internet Gateway → ALB (future)
-  └── Private Subnets [us-east-1a, us-east-1b] → NAT Gateway → RDS, EC2
+  └── Private Subnets [us-east-1a, us-east-1b] → NAT Gateway
+        ├── RDS PostgreSQL 16 Single-AZ ← rds_sg (port 5432 from app_sg only)
+        │     DB Subnet Group · gp3 20GB encrypted · 7-day automated backups
+        └── EC2 App Server (Hito 8) ← app_sg
 ```
 
 ### ☁️ Production Target
@@ -34,10 +37,19 @@ ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 ## ⚡ Operational Quick Start
 
 ### 1. Provision Infrastructure
-Ensure you have a `Makefile` compatible environment and `uv` installed. This command will bootstrap the local containers:
 
+**Local (Docker):**
 ```bash
 make up
+```
+
+**Cloud (AWS — requires Terraform and valid AWS credentials):**
+```bash
+cd infra/terraform/envs/dev
+export TF_VAR_db_password="your-secure-password"
+terraform init
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
 ### 2. Database Governance
@@ -71,8 +83,10 @@ cd apps/api && uv run pytest tests/unit/ -v
 ├── infra/
 │   ├── migrations/     # Alembic schema versioning
 │   └── terraform/      # AWS infrastructure as code
-│       ├── modules/    # Reusable Terraform modules (networking, ...)
-│       └── envs/       # Environment entry points (dev, staging, prod)
+│       ├── modules/
+│       │   ├── networking/ # VPC, subnets, IGW, NAT Gateway (Hito 6)
+│       │   └── rds/        # RDS PostgreSQL, Security Groups, DB Subnet Group (Hito 7)
+│       └── envs/           # Environment entry points (dev, staging, prod)
 ├── docker/             # Hardened container definitions
 └── Makefile            # Service orchestration interface
 ```

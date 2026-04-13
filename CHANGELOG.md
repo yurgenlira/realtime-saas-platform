@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.7.0]
+
+### Added
+- **Managed PostgreSQL (AWS RDS)**: Provisioned RDS PostgreSQL 16 Single-AZ (`db.t3.micro`, 20GB gp3) in private VPC subnets via a reusable `modules/rds` Terraform module.
+- **DB Subnet Group**: Anchors the RDS instance exclusively to private subnets, making a public endpoint structurally impossible regardless of Security Group configuration.
+- **Least-Privilege Security Groups**: Implemented SG-to-SG firewall model — `rds_sg` accepts port 5432 only from `app_sg`, with no CIDR-based rules that could allow unintended access as instance IPs rotate.
+- **Application Security Group (`app_sg`)**: Placeholder Security Group created in the RDS module and exported as an output; EC2 (Hito 8) will adopt it without requiring changes to the RDS configuration.
+- **Automated Backups**: Daily snapshots at 03:00–04:00 UTC with 7-day retention, maintenance window at 04:00–05:00 UTC (post-backup).
+- **Encrypted Storage**: `storage_encrypted = true` with AWS-managed KMS key applied to the gp3 volume.
+- **Sensitive Variable Handling**: `db_password` declared with `sensitive = true` and injected via `TF_VAR_db_password` — never hardcoded or committed.
+
+### Infrastructure
+- **New Terraform Module**: `infra/terraform/modules/rds/` with `main.tf`, `variables.tf`, and `outputs.tf`.
+- **Environment Updated**: `infra/terraform/envs/dev/main.tf` calls the `rds` module consuming `vpc_id` and `private_subnet_ids` from the `networking` module outputs.
+- **New Outputs**: `db_endpoint`, `db_host`, `db_port`, `db_name`, `app_security_group_id`, `rds_security_group_id` exported from `envs/dev`.
+
 ## [0.6.0]
 
 ### Added

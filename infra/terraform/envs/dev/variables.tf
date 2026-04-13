@@ -12,3 +12,14 @@ variable "aws_region" {
   description = "AWS region where resources will be provisioned"
   default     = "us-east-1"
 }
+
+variable "db_username" {
+  description = "Master username for RDS"
+  default     = "postgres"
+}
+
+variable "db_password" {
+  description = "Master password for RDS"
+  type        = string
+  sensitive   = true
+}
