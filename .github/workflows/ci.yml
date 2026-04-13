@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 # Cancel previous runs of the same PR if a new push is made
 concurrency:
