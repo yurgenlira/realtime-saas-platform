@@ -4,18 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
-## [0.4.0] - 2026-04-09
+## [0.6.0]
 
 ### Added
-- **Infrastructure-as-Code (Schema)**: Initialized database migration lifecycle using Alembic for declarative schema management.
-- **Relational Domain Model**: Implemented decoupled domain entities (`Tenant`, `Message`) with SQLAlchemy 2.1.
-- **Service Decoupling**: Refactored monolithic structure into a scalable Monorepo (apps/libs/infra).
-- **Control Plane**: Integrated `Makefile` as a standardized interface for local orchestration and lifecycle management.
+- **Cloud Network Backbone**: Provisioned multi-AZ AWS VPC (`10.0.0.0/16`) with 2 public and 2 private subnets distributed across `us-east-1a` and `us-east-1b`.
+- **Internet Gateway**: Enabled inbound/outbound public traffic for resources in public subnets (future ALB placement).
+- **NAT Gateway + Elastic IP**: Enabled outbound internet access from private subnets without exposing internal resources.
+- **Route Tables**: Defined explicit public (`0.0.0.0/0 → IGW`) and private (`0.0.0.0/0 → NAT`) routing rules with subnet associations.
+- **Reusable Terraform Module**: Implemented `infra/terraform/modules/networking` as a parameterized, environment-agnostic module (CIDRs, AZs, project name, environment as variables).
+- **Remote State Backend**: Configured Terraform state storage in S3 with DynamoDB locking for concurrent-safe team collaboration.
+- **FinOps Tagging**: Applied `default_tags` at provider level (`Project`, `Environment`, `ManagedBy`) for cost attribution across all resources.
 
-### Changed
-- **Worker Resiliency**: Optimized model discovery during event processing via centralized metadata registration.
-- **Dependency Management**: Standardized build environment using `uv` for deterministic runtime isolation.
-
+### Infrastructure
+- **IaC Toolchain**: Terraform 1.14.7 with AWS provider `~> 6.37` introduced as the standard for all cloud resource provisioning.
+- **Environment Structure**: Established `infra/terraform/envs/dev/` as the entry point pattern for multi-environment deployments (dev → staging → prod).
 
 ## [0.5.0]
 
@@ -29,6 +31,17 @@ This project follows an evolving architecture from MVP to Enterprise SaaS.
 ### Changed
 - **Dependency Manifest**: Added `httpx`, `pytest-cov`, and `ruff` to `[project.optional-dependencies] dev` in `apps/api/pyproject.toml`.
 
+## [0.4.0]
+
+### Added
+- **Infrastructure-as-Code (Schema)**: Initialized database migration lifecycle using Alembic for declarative schema management.
+- **Relational Domain Model**: Implemented decoupled domain entities (`Tenant`, `Message`) with SQLAlchemy 2.1.
+- **Service Decoupling**: Refactored monolithic structure into a scalable Monorepo (apps/libs/infra).
+- **Control Plane**: Integrated `Makefile` as a standardized interface for local orchestration and lifecycle management.
+
+### Changed
+- **Worker Resiliency**: Optimized model discovery during event processing via centralized metadata registration.
+- **Dependency Management**: Standardized build environment using `uv` for deterministic runtime isolation.
 
 ## [0.3.0]
 
