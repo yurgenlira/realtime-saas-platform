@@ -14,7 +14,9 @@ VPC (10.0.0.0/16)
   └── Private Subnets [us-east-1a, us-east-1b] → NAT Gateway
         ├── RDS PostgreSQL 16 Single-AZ ← rds_sg (port 5432 from app_sg only)
         │     DB Subnet Group · gp3 20GB encrypted · 7-day automated backups
-        └── EC2 App Server (Hito 8) ← app_sg
+        └── EC2 t3.micro (API + Worker) ← app_sg
+              Docker: entrypoint → alembic upgrade head → uvicorn
+              IAM Instance Profile (CloudWatch + SSM)
 ```
 
 ### ☁️ Production Target
@@ -27,8 +29,8 @@ ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 - **Framework**: FastAPI
 - **Database**: PostgreSQL 16
 - **Cache/Queue**: Redis 7
-- **Containerization**: Docker (Multi-stage, Non-root)
-- **Orchestration**: Docker Compose
+- **Containerization**: Docker (Multi-stage, Non-root, Alembic entrypoint)
+- **Orchestration**: Docker Compose / EC2 (cloud)
 - **IaC**: Terraform 1.14.7 (AWS provider 6.40.0, remote state: S3 + DynamoDB)
 - **Quality**: Ruff, Pre-commit
 - **Testing**: Pytest, pytest-cov (70% minimum coverage gate)
@@ -84,8 +86,9 @@ cd apps/api && uv run pytest tests/unit/ -v
 │   ├── migrations/     # Alembic schema versioning
 │   └── terraform/      # AWS infrastructure as code
 │       ├── modules/
-│       │   ├── networking/ # VPC, subnets, IGW, NAT Gateway (Hito 6)
-│       │   └── rds/        # RDS PostgreSQL, Security Groups, DB Subnet Group (Hito 7)
+│       │   ├── networking/ # VPC, subnets, IGW, NAT Gateway
+│       │   ├── rds/        # RDS PostgreSQL, Security Groups, DB Subnet Group
+│       │   └── ec2/        # EC2 instance, IAM Instance Profile, user_data bootstrap
 │       └── envs/           # Environment entry points (dev, staging, prod)
 ├── docker/             # Hardened container definitions
 └── Makefile            # Service orchestration interface

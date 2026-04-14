@@ -23,3 +23,9 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "github_token" {
+  description = "GitHub Personal Access Token for repository access"
+  type        = string
+  sensitive   = true
+}

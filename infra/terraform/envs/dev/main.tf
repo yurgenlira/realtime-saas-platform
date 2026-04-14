@@ -21,3 +21,19 @@ module "rds" {
   db_username = var.db_username
   db_password = var.db_password
 }
+
+module "ec2" {
+  source = "../../modules/ec2"
+
+  project_name          = var.project_name
+  environment           = var.environment
+  private_subnet_ids    = module.networking.private_subnet_ids
+  app_security_group_id = module.rds.app_security_group_id
+
+  db_host     = module.rds.db_host
+  db_port     = module.rds.db_port
+  db_name     = module.rds.db_name
+  db_username = var.db_username
+  db_password = var.db_password
+  github_token = var.github_token
+}
