@@ -46,10 +46,12 @@ module "ecr" {
 }
 
 module "iam_github_oidc" {
-  source             = "../../modules/iam_github_oidc"
-  project_name       = var.project_name
-  github_repo        = var.github_repo
-  ecr_repository_arn = module.ecr.repository_arn
-  ec2_instance_id    = module.ec2.instance_id
-  aws_region         = var.aws_region
+  source                 = "../../modules/iam_github_oidc"
+  project_name           = var.project_name
+  github_repo            = var.github_repo
+  ecr_repository_arn     = module.ecr.repository_arn
+  ec2_instance_id        = module.ec2.instance_id
+  aws_region             = var.aws_region
+  terraform_state_bucket = var.terraform_state_bucket
+  terraform_lock_table   = var.terraform_lock_table
 }

@@ -101,8 +101,8 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:s3:::realtime-saas-terraform-state-dev",
-          "arn:aws:s3:::realtime-saas-terraform-state-dev/*"
+          "arn:aws:s3:::${var.terraform_state_bucket}",
+          "arn:aws:s3:::${var.terraform_state_bucket}/*"
         ]
       },
       {
@@ -112,8 +112,47 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "dynamodb:PutItem",
           "dynamodb:DeleteItem"
         ]
-        Resource = "arn:aws:dynamodb:${var.aws_region}:*:table/realtime-saas-terraform-locks"
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${var.terraform_lock_table}"
       }
     ]
   })
-}                       
+}
+
+resource "aws_iam_role_policy" "github_actions_terraform_read" {
+  name = "terraform-read"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        # IAM
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:GetOpenIDConnectProvider",
+        "iam:GetInstanceProfile",
+        # ECR
+        "ecr:DescribeRepositories",
+        "ecr:GetLifecyclePolicy",
+        # EC2 / VPC
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeNatGateways",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSecurityGroupRules",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceAttribute",
+        # RDS
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBSubnetGroups",
+        "rds:ListTagsForResource"
+      ]
+      Resource = "*"
+    }]
+  })
+}

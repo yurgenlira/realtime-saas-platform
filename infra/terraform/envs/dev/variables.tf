@@ -35,3 +35,15 @@ variable "github_repo" {
   type        = string
   default     = "yurgenlira/realtime-saas-platform"
 }
+
+variable "terraform_state_bucket" {
+  description = "S3 bucket name storing Terraform state"
+  type        = string
+  default     = "realtime-saas-terraform-state-dev"
+}
+
+variable "terraform_lock_table" {
+  description = "DynamoDB table name used for Terraform state locking"
+  type        = string
+  default     = "realtime-saas-terraform-locks"
+}

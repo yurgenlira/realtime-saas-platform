@@ -22,3 +22,13 @@ variable "aws_region" {
   description = "AWS region"
   type        = string
 }
+
+variable "terraform_state_bucket" {
+  description = "S3 bucket name storing Terraform state"
+  type        = string
+}
+
+variable "terraform_lock_table" {
+  description = "DynamoDB table name used for Terraform state locking"
+  type        = string
+}
