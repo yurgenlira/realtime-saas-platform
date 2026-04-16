@@ -70,3 +70,8 @@ variable "github_token" {
   type        = string
   sensitive   = true
 }
+
+variable "ecr_repository_arn" {
+  description = "ARN of the ECR repository to grant pull access to the EC2 Instance Profile"
+  type        = string
+}

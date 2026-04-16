@@ -30,10 +30,26 @@ module "ec2" {
   private_subnet_ids    = module.networking.private_subnet_ids
   app_security_group_id = module.rds.app_security_group_id
 
-  db_host     = module.rds.db_host
-  db_port     = module.rds.db_port
-  db_name     = module.rds.db_name
-  db_username = var.db_username
-  db_password = var.db_password
-  github_token = var.github_token
+  db_host            = module.rds.db_host
+  db_port            = module.rds.db_port
+  db_name            = module.rds.db_name
+  db_username        = var.db_username
+  db_password        = var.db_password
+  github_token       = var.github_token
+  ecr_repository_arn = module.ecr.repository_arn
+}
+
+module "ecr" {
+  source       = "../../modules/ecr"
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+module "iam_github_oidc" {
+  source             = "../../modules/iam_github_oidc"
+  project_name       = var.project_name
+  github_repo        = var.github_repo
+  ecr_repository_arn = module.ecr.repository_arn
+  ec2_instance_id    = module.ec2.instance_id
+  aws_region         = var.aws_region
 }

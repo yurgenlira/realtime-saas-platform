@@ -18,6 +18,8 @@ cat > /opt/app/.env << 'ENVEOF'
 DATABASE_URL=postgresql://${db_username}:${db_password}@${db_host}:${db_port}/${db_name}
 REDIS_URL=${redis_url}
 ENVEOF
+chmod 600 /opt/app/.env
+chown ec2-user:ec2-user /opt/app/.env
 
 # Build Docker Image
 docker build -f docker/Dockerfile --target runner -t ${project}-api:latest .

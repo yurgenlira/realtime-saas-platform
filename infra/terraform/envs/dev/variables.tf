@@ -29,3 +29,9 @@ variable "github_token" {
   type        = string
   sensitive   = true
 }
+
+variable "github_repo" {
+  description = "GitHub repository in format owner/repo"
+  type        = string
+  default     = "yurgenlira/realtime-saas-platform"
+}
