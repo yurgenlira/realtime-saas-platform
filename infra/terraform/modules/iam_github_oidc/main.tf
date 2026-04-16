@@ -137,6 +137,7 @@ resource "aws_iam_role_policy" "github_actions_terraform_read" {
         # ECR
         "ecr:DescribeRepositories",
         "ecr:GetLifecyclePolicy",
+        "ecr:ListTagsForResource",
         # EC2 / VPC
         "ec2:DescribeVpcs",
         "ec2:DescribeVpcAttribute",
@@ -148,6 +149,8 @@ resource "aws_iam_role_policy" "github_actions_terraform_read" {
         "ec2:DescribeSecurityGroupRules",
         "ec2:DescribeInstances",
         "ec2:DescribeInstanceAttribute",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeAddresses",
         # RDS
         "rds:DescribeDBInstances",
         "rds:DescribeDBSubnetGroups",
