@@ -139,6 +139,7 @@ resource "aws_iam_role_policy" "github_actions_terraform_read" {
         "ecr:GetLifecyclePolicy",
         # EC2 / VPC
         "ec2:DescribeVpcs",
+        "ec2:DescribeVpcAttribute",
         "ec2:DescribeSubnets",
         "ec2:DescribeRouteTables",
         "ec2:DescribeInternetGateways",
