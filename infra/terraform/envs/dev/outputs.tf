@@ -17,3 +17,11 @@ output "ec2_instance_id" {
 output "ec2_private_ip" {
   value = module.ec2.private_ip
 }
+
+output "ecr_repository_url" {
+  value = module.ecr.repository_url
+}
+
+output "github_actions_role_arn" {
+  value = module.iam_github_oidc.role_arn
+}

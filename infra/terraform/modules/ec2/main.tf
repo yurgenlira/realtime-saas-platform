@@ -92,3 +92,31 @@ resource "aws_instance" "app" {
     ManagedBy   = "terraform"
   }
 }
+
+# ---------------------------------------------------
+# ECR Pull Policy
+# ---------------------------------------------------
+resource "aws_iam_role_policy" "ecr_pull" {
+  name = "${var.project_name}-${var.environment}-ecr-pull"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken"]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = var.ecr_repository_arn
+      }
+    ]
+  })
+}
