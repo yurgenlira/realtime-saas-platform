@@ -14,11 +14,16 @@ VPC (10.0.0.0/16)
   └── Private Subnets [us-east-1a, us-east-1b] → NAT Gateway
         ├── RDS PostgreSQL 16 Single-AZ ← rds_sg (port 5432 from app_sg only)
         │     DB Subnet Group · gp3 20GB encrypted · 7-day automated backups
-        └── EC2 t3.micro (API + Worker) ← app_sg
-              Docker: entrypoint → alembic upgrade head → uvicorn
-              IAM Instance Profile (CloudWatch + SSM + ECR pull)
+        ├── EC2 t3.micro (API + Worker) ← app_sg
+        │     Docker: entrypoint → alembic upgrade head → uvicorn
+        │     IAM Instance Profile (CloudWatch + SSM + ECR pull + Secrets Manager)
+        │     Credentials: fetched from Secrets Manager at boot via Instance Profile
+        └── SQS
+              ├── ingestion-queue (Standard, retention: 4d, visibility_timeout: 30s)
+              └── ingestion-dead-letter (retention: 14d, maxReceiveCount: 5)
 
 ECR: realtime-saas-api  (scan_on_push · lifecycle: last 10 images)
+Secrets Manager: realtime-saas/dev/rds (RDS credentials — KMS encrypted)
 GitHub Actions Role (OIDC — no static credentials)
   ├── ecr:push → ECR repository
   ├── ssm:SendCommand → EC2 instance
@@ -27,14 +32,15 @@ GitHub Actions Role (OIDC — no static credentials)
 
 ### ☁️ Production Target
 ```text
-ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
+ALB → ECS Fargate (API/Worker) → SQS → ElastiCache (Redis) → RDS (PostgreSQL)
 ```
 
 ## 🛠️ Tech Stack
 - **Runtime**: Python 3.12 (uv managed)
 - **Framework**: FastAPI
 - **Database**: PostgreSQL 16
-- **Cache/Queue**: Redis 7
+- **Cache/Queue**: Redis 7 / AWS SQS (provisioned, wired in next milestone)
+- **Secrets**: AWS Secrets Manager (RDS credentials)
 - **Containerization**: Docker (Multi-stage, Non-root, Alembic entrypoint)
 - **Orchestration**: Docker Compose / EC2 (cloud)
 - **IaC**: Terraform 1.14.7 (AWS provider 6.40.0, remote state: S3 + DynamoDB)
@@ -56,6 +62,7 @@ make up
 ```bash
 cd infra/terraform/envs/dev
 export TF_VAR_db_password="your-secure-password"
+export TF_VAR_github_token="your-github-token"
 terraform init
 terraform plan -out=tfplan
 terraform apply tfplan
@@ -97,7 +104,9 @@ cd apps/api && uv run pytest tests/unit/ -v
 │       │   ├── rds/              # RDS PostgreSQL, Security Groups, DB Subnet Group
 │       │   ├── ec2/              # EC2 instance, IAM Instance Profile, user_data bootstrap
 │       │   ├── ecr/              # ECR repository, lifecycle policy
-│       │   └── iam_github_oidc/  # OIDC Provider, GitHub Actions IAM Role
+│       │   ├── iam_github_oidc/  # OIDC Provider, GitHub Actions IAM Role
+│       │   ├── sqs/              # SQS ingestion queue + Dead Letter Queue
+│       │   └── secrets_manager/  # Secrets Manager secret for RDS credentials
 │       └── envs/                 # Environment entry points (dev, staging, prod)
 ├── docker/             # Hardened container definitions
 └── Makefile            # Service orchestration interface

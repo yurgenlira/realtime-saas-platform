@@ -5,7 +5,7 @@ set -euo pipefail
 dnf update -y
 
 # Docker Installation
-dnf install -y docker git
+dnf install -y docker git jq
 systemctl enable docker
 systemctl start docker
 
@@ -13,13 +13,29 @@ systemctl start docker
 git clone https://${github_token}@github.com/yurgenlira/realtime-saas-platform.git /opt/app
 cd /opt/app
 
-# Environment Configuration
-cat > /opt/app/.env << 'ENVEOF'
-DATABASE_URL=postgresql://${db_username}:${db_password}@${db_host}:${db_port}/${db_name}
+# Fetch RDS credentials from Secrets Manager using Instance Profile
+SECRET_JSON=$(aws secretsmanager get-secret-value \
+  --secret-id "${rds_secret_name}" \
+  --region "${aws_region}" \
+  --query SecretString \
+  --output text)
+
+DB_USERNAME=$(echo "$SECRET_JSON" | jq -r '.username')
+DB_PASSWORD=$(echo "$SECRET_JSON" | jq -r '.password')
+DB_HOST=$(echo "$SECRET_JSON"     | jq -r '.host')
+DB_PORT=$(echo "$SECRET_JSON"     | jq -r '.port')
+DB_NAME=$(echo "$SECRET_JSON"     | jq -r '.dbname')
+
+cat > /opt/app/.env << EOF
+DATABASE_URL=postgresql://$${DB_USERNAME}:$${DB_PASSWORD}@$${DB_HOST}:$${DB_PORT}/$${DB_NAME}
 REDIS_URL=${redis_url}
-ENVEOF
+SQS_QUEUE_URL=${sqs_queue_url}
+EOF
 chmod 600 /opt/app/.env
 chown ec2-user:ec2-user /opt/app/.env
+
+# Clear shell variables — credentials must not persist in the cloud-init parent process environment
+unset SECRET_JSON DB_USERNAME DB_PASSWORD DB_HOST DB_PORT DB_NAME
 
 # Build Docker Image
 docker build -f docker/Dockerfile --target runner -t ${project}-api:latest .

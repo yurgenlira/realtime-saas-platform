@@ -72,15 +72,13 @@ resource "aws_instance" "app" {
 
   # Bootstrap script: runs once on first boot
   user_data_base64 = base64encode(templatefile("${path.module}/user_data.sh", {
-    db_host      = var.db_host
-    db_port      = var.db_port
-    db_name      = var.db_name
-    db_username  = var.db_username
-    db_password  = var.db_password
-    redis_url    = var.redis_url
-    github_token = var.github_token
-    project      = var.project_name
-    environment  = var.environment
+    redis_url       = var.redis_url
+    github_token    = var.github_token
+    project         = var.project_name
+    environment     = var.environment
+    aws_region      = var.aws_region
+    rds_secret_name = var.rds_secret_name
+    sqs_queue_url   = var.sqs_queue_url
   }))
 
   # Ensure instance profile is ready before EC2 launches
@@ -118,5 +116,22 @@ resource "aws_iam_role_policy" "ecr_pull" {
         Resource = var.ecr_repository_arn
       }
     ]
+  })
+}
+
+# ---------------------------------------------------
+# Secrets Manager Policy
+# ---------------------------------------------------
+resource "aws_iam_role_policy" "secrets_manager_read" {
+  name = "${var.project_name}-${var.environment}-secrets-read"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = var.rds_secret_arn
+    }]
   })
 }

@@ -25,3 +25,15 @@ output "ecr_repository_url" {
 output "github_actions_role_arn" {
   value = module.iam_github_oidc.role_arn
 }
+
+output "sqs_ingestion_queue_url" {
+  value = module.sqs.ingestion_queue_url
+}
+
+output "sqs_dead_letter_queue_url" {
+  value = module.sqs.dead_letter_queue_url
+}
+
+output "rds_secret_name" {
+  value = module.secrets_manager.secret_name
+}

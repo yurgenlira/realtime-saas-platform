@@ -32,32 +32,6 @@ variable "ami_id" {
   default = "ami-0ea87431b78a82070"
 }
 
-variable "db_host" {
-  description = "RDS instance hostname"
-  type        = string
-}
-
-variable "db_port" {
-  description = "RDS instance port"
-  type        = number
-  default     = 5432
-}
-
-variable "db_name" {
-  description = "Database name"
-  type        = string
-}
-
-variable "db_username" {
-  description = "Database master username"
-  type        = string
-}
-
-variable "db_password" {
-  description = "Database master password"
-  type        = string
-  sensitive   = true
-}
 
 variable "redis_url" {
   description = "Redis connection URL"
@@ -73,5 +47,25 @@ variable "github_token" {
 
 variable "ecr_repository_arn" {
   description = "ARN of the ECR repository to grant pull access to the EC2 Instance Profile"
+  type        = string
+}
+
+variable "rds_secret_arn" {
+  description = "ARN of the Secrets Manager secret containing RDS credentials"
+  type        = string
+}
+
+variable "rds_secret_name" {
+  description = "Name of the Secrets Manager secret containing RDS credentials"
+  type        = string
+}
+
+variable "sqs_queue_url" {
+  description = "SQS ingestion queue URL"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region"
   type        = string
 }

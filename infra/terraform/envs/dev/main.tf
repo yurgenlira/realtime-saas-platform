@@ -30,13 +30,13 @@ module "ec2" {
   private_subnet_ids    = module.networking.private_subnet_ids
   app_security_group_id = module.rds.app_security_group_id
 
-  db_host            = module.rds.db_host
-  db_port            = module.rds.db_port
-  db_name            = module.rds.db_name
-  db_username        = var.db_username
-  db_password        = var.db_password
   github_token       = var.github_token
   ecr_repository_arn = module.ecr.repository_arn
+  aws_region         = var.aws_region
+  rds_secret_arn     = module.secrets_manager.secret_arn
+  rds_secret_name    = module.secrets_manager.secret_name
+  sqs_queue_url      = module.sqs.ingestion_queue_url
+  redis_url          = var.redis_url
 }
 
 module "ecr" {
@@ -54,4 +54,22 @@ module "iam_github_oidc" {
   aws_region             = var.aws_region
   terraform_state_bucket = var.terraform_state_bucket
   terraform_lock_table   = var.terraform_lock_table
+}
+
+module "sqs" {
+  source       = "../../modules/sqs"
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+module "secrets_manager" {
+  source               = "../../modules/secrets_manager"
+  project_name         = var.project_name
+  environment          = var.environment
+  db_username          = var.db_username
+  db_password          = var.db_password
+  db_host              = module.rds.db_host
+  db_port              = 5432
+  db_name              = var.db_name
+  recovery_window_days = 0
 }
