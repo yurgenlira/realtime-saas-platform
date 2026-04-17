@@ -127,34 +127,15 @@ resource "aws_iam_role_policy" "github_actions_terraform_read" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        # IAM
-        "iam:GetRole",
-        "iam:GetRolePolicy",
-        "iam:ListRolePolicies",
-        "iam:ListAttachedRolePolicies",
-        "iam:GetOpenIDConnectProvider",
-        "iam:GetInstanceProfile",
-        # ECR
-        "ecr:DescribeRepositories",
-        "ecr:GetLifecyclePolicy",
-        "ecr:ListTagsForResource",
-        # EC2 / VPC
-        "ec2:DescribeVpcs",
-        "ec2:DescribeVpcAttribute",
-        "ec2:DescribeSubnets",
-        "ec2:DescribeRouteTables",
-        "ec2:DescribeInternetGateways",
-        "ec2:DescribeNatGateways",
-        "ec2:DescribeSecurityGroups",
-        "ec2:DescribeSecurityGroupRules",
-        "ec2:DescribeInstances",
-        "ec2:DescribeInstanceAttribute",
-        "ec2:DescribeInstanceTypes",
-        "ec2:DescribeAddresses",
-        # RDS
-        "rds:DescribeDBInstances",
-        "rds:DescribeDBSubnetGroups",
-        "rds:ListTagsForResource"
+        # Read-only wildcards; acceptable for single-account single-environment deployment.
+        "ec2:Describe*",
+        "ecr:Describe*",
+        "ecr:List*",
+        "ecr:Get*",
+        "rds:Describe*",
+        "rds:List*",
+        "iam:Get*",
+        "iam:List*"
       ]
       Resource = "*"
     }]
