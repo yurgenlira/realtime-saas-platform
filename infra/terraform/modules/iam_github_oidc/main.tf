@@ -143,8 +143,12 @@ resource "aws_iam_role_policy" "github_actions_terraform_read" {
         "sqs:GetQueueAttributes",
         "sqs:GetQueueUrl",
         "sqs:ListQueues",
+        "sqs:ListQueueTags",
         "secretsmanager:DescribeSecret",
-        "secretsmanager:ListSecrets"
+        "secretsmanager:ListSecrets",
+        "secretsmanager:GetResourcePolicy",
+        "secretsmanager:ListSecretVersionIds",
+        "secretsmanager:GetSecretValue"
       ]
       Resource = "*"
     }]
