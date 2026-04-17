@@ -139,7 +139,12 @@ resource "aws_iam_role_policy" "github_actions_terraform_read" {
         "rds:Describe*",
         "rds:List*",
         "iam:Get*",
-        "iam:List*"
+        "iam:List*",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:ListQueues",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:ListSecrets"
       ]
       Resource = "*"
     }]
