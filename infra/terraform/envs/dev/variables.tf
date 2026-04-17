@@ -24,6 +24,18 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "db_name" {
+  description = "Database name"
+  type        = string
+  default     = "webhooks"
+}
+
+variable "redis_url" {
+  description = "Redis connection URL"
+  type        = string
+  default     = "redis://localhost:6379"
+}
+
 variable "github_token" {
   description = "GitHub Personal Access Token for repository access"
   type        = string

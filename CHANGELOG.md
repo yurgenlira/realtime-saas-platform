@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.10.0] - 2026-04-17
+
+### Added
+- `modules/sqs`: Standard SQS ingestion queue with 30s visibility timeout and 4-day retention
+- `modules/sqs`: Dead Letter Queue with 14-day retention and Redrive Policy (`maxReceiveCount: 5`)
+- `modules/secrets_manager`: Secrets Manager secret storing RDS credentials as structured JSON (username, password, host, port, dbname)
+- `modules/ec2`: IAM inline policy `secrets_manager_read` scoped to exact secret ARN
+- `envs/dev`: Variables `db_name` and `redis_url` declared in `variables.tf`
+
+### Changed
+- `modules/ec2/user_data.sh`: replaced plaintext `db_password` interpolation with `aws secretsmanager get-secret-value` at boot; added `jq` to package install; added `unset` of credential variables post-write; added `SQS_QUEUE_URL` to `/opt/app/.env`
+- `modules/ec2/main.tf`: `user_data` → `user_data_base64`; added `secrets_manager_read` policy; updated `templatefile` inputs
+- `envs/dev/main.tf`: wired `module.sqs` and `module.secrets_manager`; replaced `db_*` inputs in `module.ec2` with `rds_secret_arn`, `rds_secret_name`, `sqs_queue_url`, `redis_url`
+
+### Removed
+- `modules/ec2/variables.tf`: `db_host`, `db_port`, `db_name`, `db_username`, `db_password` — no longer passed to EC2 module
+
 ## [0.9.0]
 
 ### Added
