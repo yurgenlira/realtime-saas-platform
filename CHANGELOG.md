@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.9.0]
+
+### Added
+- **ECR Repository**: Private Docker registry (`realtime-saas-api`) with `scan_on_push` and lifecycle policy retaining the last 10 images.
+- **IAM OIDC Provider + GitHub Actions Role**: Keyless AWS authentication — GitHub signs a JWT per job; AWS validates via OIDC and returns short-lived STS credentials. No static Access Keys stored in GitHub Secrets.
+- **CD Workflow (`cd.yml`)**: On merge to `main`: build Docker image → push to ECR with `$GITHUB_SHA` tag + `latest` → SSM RunCommand deploy on EC2. `concurrency: cancel-in-progress: false` serializes deploys to prevent race conditions on `docker stop/run`.
+- **Terraform Plan in CI**: Job added to `ci.yml` that runs `terraform init + plan` on every PR touching `.tf` files and posts the output as a PR comment.
+
+### Changed
+- **EC2 Instance Profile**: Added `ecr-pull` policy so the instance can `docker pull` from ECR using its IAM role without registry credentials.
+- **`user_data.sh`**: Added `chmod 600 / chown ec2-user` on `/opt/app/.env` to restrict credential file access to the process owner.
+- **`ci.yml`**: Added `set -o pipefail` to Terraform Plan step so terraform exit codes propagate through the `| tee` pipe.
+
+### Infrastructure
+- **New modules**: `infra/terraform/modules/ecr/`, `infra/terraform/modules/iam_github_oidc/`
+- **`envs/dev`**: Variables `github_repo`, `terraform_state_bucket`, `terraform_lock_table` added with defaults; outputs `ecr_repository_url`, `github_actions_role_arn` exported.
+- **Branch protection**: Required checks `Code Quality`, `Unit Tests`, `Docker Build Check`, `Terraform Plan` enforced on `main`.
+
 ## [0.8.0]
 
 ### Added

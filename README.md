@@ -16,7 +16,13 @@ VPC (10.0.0.0/16)
         │     DB Subnet Group · gp3 20GB encrypted · 7-day automated backups
         └── EC2 t3.micro (API + Worker) ← app_sg
               Docker: entrypoint → alembic upgrade head → uvicorn
-              IAM Instance Profile (CloudWatch + SSM)
+              IAM Instance Profile (CloudWatch + SSM + ECR pull)
+
+ECR: realtime-saas-api  (scan_on_push · lifecycle: last 10 images)
+GitHub Actions Role (OIDC — no static credentials)
+  ├── ecr:push → ECR repository
+  ├── ssm:SendCommand → EC2 instance
+  └── terraform read → plan on PRs
 ```
 
 ### ☁️ Production Target
@@ -34,7 +40,8 @@ ALB → ECS Fargate (API/Worker) → ElastiCache (Redis) → RDS (PostgreSQL)
 - **IaC**: Terraform 1.14.7 (AWS provider 6.40.0, remote state: S3 + DynamoDB)
 - **Quality**: Ruff, Pre-commit
 - **Testing**: Pytest, pytest-cov (70% minimum coverage gate)
-- **CI**: GitHub Actions (lint → test → docker build)
+- **CI**: GitHub Actions (lint → test → docker build → terraform plan)
+- **CD**: GitHub Actions (build → push ECR → SSM RunCommand deploy)
 
 ## ⚡ Operational Quick Start
 
@@ -86,10 +93,12 @@ cd apps/api && uv run pytest tests/unit/ -v
 │   ├── migrations/     # Alembic schema versioning
 │   └── terraform/      # AWS infrastructure as code
 │       ├── modules/
-│       │   ├── networking/ # VPC, subnets, IGW, NAT Gateway
-│       │   ├── rds/        # RDS PostgreSQL, Security Groups, DB Subnet Group
-│       │   └── ec2/        # EC2 instance, IAM Instance Profile, user_data bootstrap
-│       └── envs/           # Environment entry points (dev, staging, prod)
+│       │   ├── networking/       # VPC, subnets, IGW, NAT Gateway
+│       │   ├── rds/              # RDS PostgreSQL, Security Groups, DB Subnet Group
+│       │   ├── ec2/              # EC2 instance, IAM Instance Profile, user_data bootstrap
+│       │   ├── ecr/              # ECR repository, lifecycle policy
+│       │   └── iam_github_oidc/  # OIDC Provider, GitHub Actions IAM Role
+│       └── envs/                 # Environment entry points (dev, staging, prod)
 ├── docker/             # Hardened container definitions
 └── Makefile            # Service orchestration interface
 ```
