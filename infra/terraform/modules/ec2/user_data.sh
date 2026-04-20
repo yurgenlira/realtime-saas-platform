@@ -47,6 +47,14 @@ docker run -d \
   -p 8000:8000 \
   ${project}-api:latest
 
+# Launch Worker Container
+docker run -d \
+  --name worker \
+  --restart unless-stopped \
+  --env-file /opt/app/.env \
+  ${project}-api:latest \
+  python apps/worker/main.py
+
 # Install CloudWatch Agent
 dnf install -y amazon-cloudwatch-agent
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
