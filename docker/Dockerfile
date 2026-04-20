@@ -70,6 +70,9 @@ ENV PYTHONUNBUFFERED=1
 # Copy Alembic config and migration scripts
 COPY infra/ /app/infra/
 
+# Copy worker entrypoint — needed when launching the container with --entrypoint python
+COPY apps/worker/main.py /app/apps/worker/main.py
+
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
