@@ -4,7 +4,30 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
-## [0.10.0] - 2026-04-17
+## [0.11.0]
+
+### Added
+- `apps/api`, `apps/worker`: `boto3>=1.42.89` added to both package dependencies via `uv add`; `uv.lock` regenerated
+- `modules/ec2/main.tf`: inline IAM policy `sqs_send_receive` scoped to `sqs_queue_arn` — grants `SendMessage`, `ReceiveMessage`, `DeleteMessage`, `GetQueueAttributes`, `ChangeMessageVisibility` to the EC2 Instance Profile
+
+### Changed
+- `apps/api/src/api/services/ingestion.py`: replaced Redis `lpush` with synchronous `boto3.sqs.send_message`; `tenant_id` sent as `MessageAttribute` outside body; SQS client initialized at module level for connection reuse
+- `apps/api/src/api/v1/routes.py`: removed `BackgroundTasks` dependency; `push_to_queue` called synchronously — `202` returned only after SQS confirms receipt
+- `apps/worker/main.py`: rewrote Redis `brpop` blocking loop as SQS long-polling (`WaitTimeSeconds=20`, `MaxNumberOfMessages=10`) with atomic ACK — `delete_message` called only after `db.commit()`; on exception message re-queues after `visibility_timeout`
+- `apps/api/tests/conftest.py`: replaced `REDIS_URL` env var with `SQS_QUEUE_URL` and `AWS_REGION`
+- `apps/api/tests/unit/test_webhooks.py`: renamed `test_background_task_is_called_after_202` → `test_push_to_queue_is_called_on_ingest`
+- `docker/Dockerfile`: runner stage adds `COPY apps/worker/main.py /app/apps/worker/main.py` so the worker script exists in the production image
+- `modules/ec2/user_data.sh`: removed `REDIS_URL` from `.env` heredoc; added worker container launch with `--entrypoint /opt/venv/bin/python`
+- `modules/ec2/variables.tf`: added `sqs_queue_arn`; removed `redis_url`
+- `modules/ec2/main.tf`: removed `redis_url = var.redis_url` from `templatefile` inputs
+- `envs/dev/main.tf`: wired `sqs_queue_arn = module.sqs.ingestion_queue_arn` in `module.ec2`
+- `.github/workflows/cd.yml`: added worker `stop → rm → run` with `--entrypoint /opt/venv/bin/python` to SSM RunCommand deploy step
+
+### Removed
+- `apps/api/pyproject.toml`, `apps/worker/pyproject.toml`: `redis>=7` removed from both package dependencies
+- `envs/dev/variables.tf`: `variable "redis_url"` removed
+
+## [0.10.0]
 
 ### Added
 - `modules/sqs`: Standard SQS ingestion queue with 30s visibility timeout and 4-day retention
