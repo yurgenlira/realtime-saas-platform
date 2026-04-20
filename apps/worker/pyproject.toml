@@ -1,7 +1,12 @@
 [project]
 name = "worker"
 version = "0.1.0"
-dependencies = ["redis>=7", "sqlalchemy>=2.0", "psycopg2-binary", "domain"]
+dependencies = [
+    "boto3>=1.42.89",
+    "sqlalchemy>=2.0",
+    "psycopg2-binary",
+    "domain",
+]
 
 [tool.uv.sources]
 domain = { workspace = true }

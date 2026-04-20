@@ -32,11 +32,9 @@ variable "ami_id" {
   default = "ami-0ea87431b78a82070"
 }
 
-
-variable "redis_url" {
-  description = "Redis connection URL"
+variable "sqs_queue_arn" {
+  description = "SQS ingestion queue ARN"
   type        = string
-  default     = "redis://localhost:6379"
 }
 
 variable "github_token" {

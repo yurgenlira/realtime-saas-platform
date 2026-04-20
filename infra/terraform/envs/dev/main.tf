@@ -35,8 +35,8 @@ module "ec2" {
   aws_region         = var.aws_region
   rds_secret_arn     = module.secrets_manager.secret_arn
   rds_secret_name    = module.secrets_manager.secret_name
+  sqs_queue_arn      = module.sqs.ingestion_queue_arn
   sqs_queue_url      = module.sqs.ingestion_queue_url
-  redis_url          = var.redis_url
 }
 
 module "ecr" {

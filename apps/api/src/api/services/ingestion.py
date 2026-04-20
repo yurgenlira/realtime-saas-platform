@@ -1,11 +1,20 @@
 import json
 import os
 
-import redis
+import boto3
 
-r = redis.Redis(host=os.getenv("REDIS_HOST", "redis"), decode_responses=True)
+_sqs = boto3.client("sqs", region_name=os.getenv("AWS_REGION", "us-east-1"))
+_queue_url = os.getenv("SQS_QUEUE_URL")
 
 
-def push_to_queue(tenant_id, payload):
-    event = {"tenant_id": tenant_id, "payload": payload}
-    r.lpush("events_queue", json.dumps(event))
+def push_to_queue(tenant_id: str, payload: dict) -> None:
+    _sqs.send_message(
+        QueueUrl=_queue_url,
+        MessageBody=json.dumps({"tenant_id": tenant_id, "payload": payload}),
+        MessageAttributes={
+            "tenant_id": {
+                "StringValue": tenant_id,
+                "DataType": "String",
+            }
+        },
+    )
