@@ -28,7 +28,6 @@ DB_NAME=$(echo "$SECRET_JSON"     | jq -r '.dbname')
 
 cat > /opt/app/.env << EOF
 DATABASE_URL=postgresql://$${DB_USERNAME}:$${DB_PASSWORD}@$${DB_HOST}:$${DB_PORT}/$${DB_NAME}
-REDIS_URL=${redis_url}
 SQS_QUEUE_URL=${sqs_queue_url}
 EOF
 chmod 600 /opt/app/.env
