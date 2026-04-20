@@ -60,6 +60,9 @@ jobs:
               'docker stop api || true',
               'docker rm api || true',
               'docker run -d --name api --restart unless-stopped -p 8000:8000 --env-file /opt/app/.env ${{ env.IMAGE_URI }}'
+              'docker stop worker || true',
+              'docker rm worker || true',
+              'docker run -d --name worker --restart unless-stopped --env-file /opt/app/.env ${{ env.IMAGE_URI }} python apps/worker/main.py'
             ]" \
             --query "Command.CommandId" \
             --output text)
