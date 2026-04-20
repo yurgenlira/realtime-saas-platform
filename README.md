@@ -4,7 +4,7 @@ Multi-tenant webhook ingestion platform designed using event-driven architecture
 
 ## 🏗️ Architecture
 ```text
-Client → FastAPI (Pydantic Validation) → Redis (In-memory Queue) → Worker (Background Tasks) → PostgreSQL
+Client → FastAPI (Pydantic Validation) → SQS (ingestion-queue) → Worker (Long Polling) → PostgreSQL
 ```
 
 ### ☁️ Cloud Infrastructure (AWS)
@@ -39,7 +39,7 @@ ALB → ECS Fargate (API/Worker) → SQS → ElastiCache (Redis) → RDS (Postgr
 - **Runtime**: Python 3.12 (uv managed)
 - **Framework**: FastAPI
 - **Database**: PostgreSQL 16
-- **Cache/Queue**: Redis 7 / AWS SQS (provisioned, wired in next milestone)
+- **Queue**: AWS SQS Standard (Long Polling, at-least-once, DLQ after 5 failures)
 - **Secrets**: AWS Secrets Manager (RDS credentials)
 - **Containerization**: Docker (Multi-stage, Non-root, Alembic entrypoint)
 - **Orchestration**: Docker Compose / EC2 (cloud)
