@@ -1,4 +1,4 @@
-from api.core.database import get_db
+from domain.database import get_db
 from domain.models.tenant import Tenant
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session

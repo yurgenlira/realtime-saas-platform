@@ -14,25 +14,30 @@ VPC (10.0.0.0/16)
   └── Private Subnets [us-east-1a, us-east-1b] → NAT Gateway
         ├── RDS PostgreSQL 16 Single-AZ ← rds_sg (port 5432 from app_sg only)
         │     DB Subnet Group · gp3 20GB encrypted · 7-day automated backups
-        ├── EC2 t3.micro (API + Worker) ← app_sg
-        │     Docker: entrypoint → alembic upgrade head → uvicorn
+        ├── EC2 t3.micro (API) + EC2 t3.micro (Worker) ← app_sg
+        │     Docker: entrypoint → alembic upgrade head → uvicorn (API)
+        │     Docker: entrypoint → python main.py (Worker)
         │     IAM Instance Profile (CloudWatch + SSM + ECR pull + Secrets Manager)
         │     Credentials: fetched from Secrets Manager at boot via Instance Profile
         └── SQS
               ├── ingestion-queue (Standard, retention: 4d, visibility_timeout: 30s)
               └── ingestion-dead-letter (retention: 14d, maxReceiveCount: 5)
 
-ECR: realtime-saas-api  (scan_on_push · lifecycle: last 10 images)
+ECR:
+  ├── realtime-saas-api    (scan_on_push · lifecycle: last 10 images)
+  └── realtime-saas-worker (scan_on_push · lifecycle: last 10 images)
 Secrets Manager: realtime-saas/dev/rds (RDS credentials — KMS encrypted)
 GitHub Actions Role (OIDC — no static credentials)
-  ├── ecr:push → ECR repository
-  ├── ssm:SendCommand → EC2 instance
+  ├── ecr:push → ECR repositories (api + worker)
+  ├── ssm:SendCommand → EC2 instances
   └── terraform read → plan on PRs
+GitHub Environments: dev, staging (variables scoped per deployment target)
+Terraform workspaces: default (dev), staging
 ```
 
 ### ☁️ Production Target
 ```text
-ALB → ECS Fargate (API/Worker) → SQS → ElastiCache (Redis) → RDS (PostgreSQL)
+ALB → ECS Fargate (API/Worker) → SQS → RDS (PostgreSQL)
 ```
 
 ## 🛠️ Tech Stack
@@ -41,13 +46,13 @@ ALB → ECS Fargate (API/Worker) → SQS → ElastiCache (Redis) → RDS (Postgr
 - **Database**: PostgreSQL 16
 - **Queue**: AWS SQS Standard (Long Polling, at-least-once, DLQ after 5 failures)
 - **Secrets**: AWS Secrets Manager (RDS credentials)
-- **Containerization**: Docker (Multi-stage, Non-root, Alembic entrypoint)
+- **Containerization**: Docker (Multi-stage, independent runner-api / runner-worker stages)
 - **Orchestration**: Docker Compose / EC2 (cloud)
-- **IaC**: Terraform 1.14.7 (AWS provider 6.40.0, remote state: S3 + DynamoDB)
+- **IaC**: Terraform 1.14.7 (AWS provider 6.40.0, remote state: S3 + DynamoDB, workspaces: dev/staging)
 - **Quality**: Ruff, Pre-commit
-- **Testing**: Pytest, pytest-cov (70% minimum coverage gate)
-- **CI**: GitHub Actions (lint → test → docker build → terraform plan)
-- **CD**: GitHub Actions (build → push ECR → SSM RunCommand deploy)
+- **Testing**: Pytest, pytest-cov (70% minimum coverage gate), LocalStack (SQS emulation for integration tests)
+- **CI**: GitHub Actions (lint → unit tests → integration tests → docker build → terraform plan)
+- **CD**: GitHub Actions (matrix build → push ECR api+worker → SSM RunCommand deploy, GitHub Environments)
 
 ## ⚡ Operational Quick Start
 
@@ -55,6 +60,7 @@ ALB → ECS Fargate (API/Worker) → SQS → ElastiCache (Redis) → RDS (Postgr
 
 **Local (Docker):**
 ```bash
+cp .env.example .env
 make up
 ```
 
@@ -88,7 +94,9 @@ curl -X POST http://localhost:8000/v1/webhooks/ingest \
 
 ### 4. Run Tests
 ```bash
-cd apps/api && uv run pytest tests/unit/ -v
+make test-unit          # unit tests — no containers required
+make test-integration   # integration tests — requires make up (LocalStack)
+make test               # full suite with coverage gate (70%)
 ```
 
 ## 📁 Project Organization
@@ -103,12 +111,14 @@ cd apps/api && uv run pytest tests/unit/ -v
 │       │   ├── networking/       # VPC, subnets, IGW, NAT Gateway
 │       │   ├── rds/              # RDS PostgreSQL, Security Groups, DB Subnet Group
 │       │   ├── ec2/              # EC2 instance, IAM Instance Profile, user_data bootstrap
-│       │   ├── ecr/              # ECR repository, lifecycle policy
+│       │   ├── ecr/              # ECR repository, lifecycle policy (api + worker)
 │       │   ├── iam_github_oidc/  # OIDC Provider, GitHub Actions IAM Role
 │       │   ├── sqs/              # SQS ingestion queue + Dead Letter Queue
 │       │   └── secrets_manager/  # Secrets Manager secret for RDS credentials
-│       └── envs/                 # Environment entry points (dev, staging, prod)
-├── docker/             # Hardened container definitions
+│       └── envs/                 # Environment entry points (dev workspace, staging workspace)
+├── docker/
+│   ├── Dockerfile              # Multi-stage: builder · runner-api · runner-worker
+│   └── localstack-init.sh      # SQS queue creation on LocalStack startup
 └── Makefile            # Service orchestration interface
 ```
 

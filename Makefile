@@ -1,4 +1,4 @@
-.PHONY: up down logs log migrate rollback seed lint format
+.PHONY: up down logs log migrate rollback seed lint format test test-unit test-integration
 
 # --- Dev Environment ---
 up:
@@ -29,3 +29,7 @@ format-fix:
 # --- Testing ---
 test:
 	uv run pytest . --cov --cov-report=term-missing --cov-fail-under=70
+test-unit:
+	cd apps/api && uv run pytest tests/unit/ -v
+test-integration:
+	cd apps/api && uv run pytest tests/integration/ -v

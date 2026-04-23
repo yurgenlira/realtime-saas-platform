@@ -25,9 +25,9 @@ COPY apps/api/pyproject.toml ./apps/api/
 COPY apps/worker/pyproject.toml ./apps/worker/
 COPY libs/domain/pyproject.toml ./libs/domain/
 
-# Create dummy source files for hatchling to be happy during dependency installation
-RUN mkdir -p apps/api/src/api libs/domain/src/domain apps/worker/src/worker && \
-    touch apps/api/src/api/__init__.py libs/domain/src/domain/__init__.py apps/worker/src/worker/__init__.py
+# Create dummy source files so hatchling can build api and domain before COPY . .
+RUN mkdir -p apps/api/src/api libs/domain/src/domain && \
+    touch apps/api/src/api/__init__.py libs/domain/src/domain/__init__.py
 
 # Install external dependencies, skipping the workspace packages
 RUN uv sync --frozen --no-dev --no-install-project --all-packages
@@ -53,9 +53,9 @@ CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 
 
 # ==========================================
-# Stage 4: Runner (prod)
+# Stage 4: Runner API (prod)
 # ==========================================
-FROM python:3.12-slim AS runner
+FROM python:3.12-slim AS runner-api
 WORKDIR /app
 
 # Non-root user
@@ -70,9 +70,6 @@ ENV PYTHONUNBUFFERED=1
 # Copy Alembic config and migration scripts
 COPY infra/ /app/infra/
 
-# Copy worker entrypoint — needed when launching the container with --entrypoint python
-COPY apps/worker/main.py /app/apps/worker/main.py
-
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
@@ -80,3 +77,25 @@ USER appuser
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
+
+# ==========================================
+# Stage 5: Runner Worker (prod)
+# ==========================================
+FROM python:3.12-slim AS runner-worker
+WORKDIR /app
+
+# Non-root user
+RUN adduser --disabled-password --gecos "" appuser
+
+# Copy the pre-built virtual environment from the builder
+COPY --from=builder /opt/venv /opt/venv
+
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+
+# Copy worker code
+COPY apps/worker/main.py /app/apps/worker/main.py
+
+USER appuser
+
+ENTRYPOINT ["python", "/app/apps/worker/main.py"]

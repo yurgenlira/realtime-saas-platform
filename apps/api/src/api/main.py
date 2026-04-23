@@ -1,8 +1,8 @@
+from domain.database import get_db
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from api.core.database import get_db
 from api.v1.routes import router as webhooks_v1
 
 app = FastAPI(title="Realtime SaaS Platform")
