@@ -52,7 +52,7 @@ jobs:
         run: uv run ruff format --check apps/ libs/
         # Fails if the code is not formatted correctly
 
-  test:
+  unit-tests:
     name: "Unit Tests"
     runs-on: ubuntu-latest
     needs: code-quality # Only runs if linting passes first
@@ -100,10 +100,64 @@ jobs:
           path: apps/api/coverage.xml
           retention-days: 7
 
+  integration-tests:
+    name: "Integration Tests"
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    services:
+      localstack:
+        image: localstack/localstack:3
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: sqs
+          DEFAULT_REGION: us-east-1
+        options: >-
+          --health-cmd "curl -f http://localhost:4566/_localstack/health"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.6
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: uv sync --all-packages --group dev
+
+      - name: Run integration tests
+        env:
+          AWS_ENDPOINT_URL: http://localhost:4566
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          DATABASE_URL: "sqlite:///:memory:"
+          SQS_WAIT_TIME_SECONDS: "0"
+        run: uv run pytest apps/api/tests/integration/ -v
+
   docker-build:
     name: "Docker Build Check"
     runs-on: ubuntu-latest
-    needs: test # Only runs if tests pass
+    needs: [unit-tests, integration-tests] # Only runs if tests pass
 
     steps:
       - name: Checkout repository
@@ -123,13 +177,24 @@ jobs:
           restore-keys: |
             buildx-${{ runner.os }}-
 
-      - name: Build Docker image (Dry Run)
+      - name: Build API image (Dry Run)
         if: ${{ !env.ACT }} # Skip when running locally via act (no Docker-in-Docker)
         uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
-          target: runner # Validates the production stage (runner)
+          target: runner-api # Validates the production stage (runner-api)
+          push: false # Dry Run: builds but does NOT push to any registry
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Build Worker image (Dry Run)
+        if: ${{ !env.ACT }} # Skip when running locally via act (no Docker-in-Docker)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: runner-worker # Validates the production stage (runner-worker)
           push: false # Dry Run: builds but does NOT push to any registry
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max

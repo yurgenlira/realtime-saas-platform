@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 This project follows an evolving architecture from MVP to Enterprise SaaS.
 
+## [0.12.0]
+
+### Added
+- `apps/api/tests/integration/`: integration test suite validating the full async flow — POST `/v1/webhooks/ingest` → LocalStack SQS → `process_batch` → SQLite in-memory DB
+- `apps/api/tests/integration/conftest.py`: pytest fixtures for LocalStack SQS client, ephemeral per-test queue, SQLite in-memory session with `StaticPool`, and FastAPI `TestClient` with DB override
+- `docker/localstack-init.sh`: init script mounted into LocalStack at `/etc/localstack/init/ready.d/` — creates `events-queue` automatically on container startup via `awslocal sqs create-queue`
+- `docker-compose.yml`: `localstack` service with `localstack/localstack:3` image and volume mount for init script; `worker` service depends on `localstack`
+- `infra/terraform/modules/ecr/`: second ECR repository instance `ecr_worker` (`realtime-saas-worker`) with scan-on-push and lifecycle policy
+- `infra/terraform/envs/dev/main.tf`: `terraform.workspace` as `local.env` suffix — resource names use `realtime-saas-${local.env}-*` for workspace isolation
+- `infra/terraform/envs/dev/staging.tfvars`: staging workspace variable overrides
+- `Makefile`: `test-unit` (unit tests, no containers) and `test-integration` (integration tests, requires LocalStack) targets
+
+### Changed
+- `docker/Dockerfile`: renamed `runner` stage to `runner-api`; added independent `runner-worker` stage — both derived from `python:3.12-slim` without cross-stage inheritance
+- `.github/workflows/ci.yml`: renamed `test` job to `unit-tests`; added `integration-tests` job with LocalStack service container (`localstack/localstack:3`, healthcheck on `/_localstack/health`); `docker-build` matrix now builds `runner-api` and `runner-worker` targets independently
+- `.github/workflows/cd.yml`: `build-and-push` job refactored as matrix (`service: [api, worker]`) — builds and pushes `realtime-saas-api` and `realtime-saas-worker` in parallel; `deploy` job uses `environment: dev` for GitHub Environment variable scoping
+- `apps/api/src/api/services/ingestion.py`: moved `boto3.client` initialization and `SQS_QUEUE_URL` read from module level into `push_to_queue` function body — prevents module-level caching of `None` when pytest imports the module before integration fixtures set the env var
+- `apps/worker/main.py`: extracted `process_batch(sqs_client, queue_url, db)` from `main()` loop; added `import json`; fixed message deserialization — `json.loads(msg["Body"])` with `data["payload"]` extraction
+- `apps/worker/pyproject.toml`: removed `[build-system]` and `[tool.hatch.build.targets.wheel]` — worker is a script, not a distributable package; uv installs dependencies without build backend
+- `.env.example`: removed `REDIS_URL`, `REDIS_HOST`; added `SQS_QUEUE_URL`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` for LocalStack local development
+
+### Infrastructure
+- GitHub Environments `dev` and `staging` created; repository variables migrated to `dev` environment; `staging` environment provisioned with `EC2_INSTANCE_ID` from Terraform output and shared ECR/region variables
+- Terraform workspace `staging` created with `terraform import` for global resources (ECR repositories, lifecycle policies, OIDC provider, IAM role, 4 inline policies) to prevent `RepositoryAlreadyExistsException`/`EntityAlreadyExists` on apply
+
 ## [0.11.0]
 
 ### Added

@@ -34,14 +34,21 @@ services:
     networks:
       - backend
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
+  localstack:
+    image: localstack/localstack:3
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs
+      - DEFAULT_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - ./docker/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
     networks:
       - backend
 
@@ -58,7 +65,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
+      localstack:
         condition: service_healthy
     networks:
       - backend

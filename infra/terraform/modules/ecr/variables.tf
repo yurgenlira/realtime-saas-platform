@@ -3,7 +3,7 @@ variable "project_name" {
   type        = string
 }
 
-variable "environment" {
-  description = "Deployment environment: dev, staging, prod"
+variable "service" {
+  description = "Service name used as suffix for the repository name"
   type        = string
 }

@@ -1,8 +1,12 @@
+locals {
+  env = terraform.workspace
+}
+
 module "networking" {
   source = "../../modules/networking"
 
   project_name         = var.project_name
-  environment          = var.environment
+  environment          = local.env
   vpc_cidr             = "10.0.0.0/16"
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
@@ -13,7 +17,7 @@ module "rds" {
   source = "../../modules/rds"
 
   project_name       = var.project_name
-  environment        = var.environment
+  environment        = local.env
   vpc_id             = module.networking.vpc_id
   private_subnet_ids = module.networking.private_subnet_ids
 
@@ -26,12 +30,12 @@ module "ec2" {
   source = "../../modules/ec2"
 
   project_name          = var.project_name
-  environment           = var.environment
+  environment           = local.env
   private_subnet_ids    = module.networking.private_subnet_ids
   app_security_group_id = module.rds.app_security_group_id
 
   github_token       = var.github_token
-  ecr_repository_arn = module.ecr.repository_arn
+  ecr_repository_arn = module.ecr_api.repository_arn
   aws_region         = var.aws_region
   rds_secret_arn     = module.secrets_manager.secret_arn
   rds_secret_name    = module.secrets_manager.secret_name
@@ -39,17 +43,23 @@ module "ec2" {
   sqs_queue_url      = module.sqs.ingestion_queue_url
 }
 
-module "ecr" {
+module "ecr_api" {
   source       = "../../modules/ecr"
   project_name = var.project_name
-  environment  = var.environment
+  service      = "api"
+}
+
+module "ecr_worker" {
+  source       = "../../modules/ecr"
+  project_name = var.project_name
+  service      = "worker"
 }
 
 module "iam_github_oidc" {
   source                 = "../../modules/iam_github_oidc"
   project_name           = var.project_name
   github_repo            = var.github_repo
-  ecr_repository_arn     = module.ecr.repository_arn
+  ecr_repository_arn     = module.ecr_api.repository_arn
   ec2_instance_id        = module.ec2.instance_id
   aws_region             = var.aws_region
   terraform_state_bucket = var.terraform_state_bucket
@@ -59,13 +69,13 @@ module "iam_github_oidc" {
 module "sqs" {
   source       = "../../modules/sqs"
   project_name = var.project_name
-  environment  = var.environment
+  environment  = local.env
 }
 
 module "secrets_manager" {
   source               = "../../modules/secrets_manager"
   project_name         = var.project_name
-  environment          = var.environment
+  environment          = local.env
   db_username          = var.db_username
   db_password          = var.db_password
   db_host              = module.rds.db_host

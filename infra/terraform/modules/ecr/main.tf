@@ -1,5 +1,5 @@
-resource "aws_ecr_repository" "app" {
-  name                 = "${var.project_name}-api"
+resource "aws_ecr_repository" "this" {
+  name                 = "${var.project_name}-${var.service}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -7,12 +7,12 @@ resource "aws_ecr_repository" "app" {
   }
 
   tags = {
-    Name = "${var.project_name}-api"
+    Name = "${var.project_name}-${var.service}"
   }
 }
 
-resource "aws_ecr_lifecycle_policy" "app" {
-  repository = aws_ecr_repository.app.name
+resource "aws_ecr_lifecycle_policy" "this" {
+  repository = aws_ecr_repository.this.name
 
   policy = jsonencode({
     rules = [{

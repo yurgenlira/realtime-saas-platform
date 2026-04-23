@@ -18,8 +18,12 @@ output "ec2_private_ip" {
   value = module.ec2.private_ip
 }
 
-output "ecr_repository_url" {
-  value = module.ecr.repository_url
+output "ecr_api_repository_url" {
+  value = module.ecr_api.repository_url
+}
+
+output "ecr_worker_repository_url" {
+  value = module.ecr_worker.repository_url
 }
 
 output "github_actions_role_arn" {

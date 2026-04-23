@@ -963,7 +963,7 @@ wheels = [
 [[package]]
 name = "worker"
 version = "0.1.0"
-source = { editable = "apps/worker" }
+source = { virtual = "apps/worker" }
 dependencies = [
     { name = "boto3" },
     { name = "domain" },
